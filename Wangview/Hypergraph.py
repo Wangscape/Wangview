@@ -10,20 +10,38 @@ import random
 # In[ ]:
 
 class Hypergraph(object):
+    """
+    Stores data specifying which terrains can be present in a single tile,
+    and uses that data to generate random terrain grids.
+    """
     def __init__(self, raw_hypergraph):
+        # Input data is a dict of lists of lists.
+        # Convert it to a dict of frozensets of frozensets.
         self.data = {k: frozenset(map(frozenset,v))
                      for (k,v) in raw_hypergraph.items()}
     @staticmethod
     def flatten_options(options):
+        """Returns the union of the all the sets contained in `options`"""
         return reduce(lambda x,y: x.union(y),
                       options,
                       frozenset())
     def terrain_options(self, *terrains):
+        """
+        Returns a frozenset containing the terrains which
+        can legally be placed in the same tile as the
+        terrains contained in `terrains`.
+        """
         if len(terrains) == 0:
+            # All terrains are valid
             return list(self.data.keys())
-        return self.flatten_options(reduce(
-                lambda options, terrain: [clique for clique in options if terrain in clique],
-                terrains[1:], list(self.data[terrains[0]])))
+        # Start with the list of hyperedges (cliques) containing the first terrain:
+        start = list(self.data[terrains[0]])
+        # For each additional terrain:
+        seq = terrains[1:]
+        # Restrict the list of cliques to those containing this terrain
+        combine = lambda options, terrain: [clique for clique in options if terrain in clique]
+        # Take the union of the remaining cliques
+        return self.flatten_options(reduce(combine, seq, start))
     def terrain_options_2(self, t_left=[], t_up=[]):
         if len(t_up) == 0:
             return self.terrain_options(*t_left)
