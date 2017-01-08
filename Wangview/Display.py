@@ -16,6 +16,11 @@ from .Hypergraph import Hypergraph
 # In[ ]:
 
 class Display(object):
+    """
+    Stores Wangscape output metadata in a suitable format,
+    stores terrain and tile grids,
+    and interfaces with bearlibterminal to draw a scene.
+    """
     def __init__(self,
                  rel_path='.',
                  fn_tile_groups='tile_groups.json',
