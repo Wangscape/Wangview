@@ -48,7 +48,8 @@ class Display(object):
         """
         Converts a full specification of a tile's location in a tileset
         into the unicode codepoint where it will have been loaded.
-        See also: `init_tilesets()`"""
+        See also: `init_tilesets()`
+        """
         tileset = self.tilesets[tile['filename']]
         return (tileset.offset +
                 tileset.width*tile['y']//self.resolution +
@@ -59,7 +60,8 @@ class Display(object):
     def init_tile_groups(self, raw_groups):
         """
         Converts the data the `tile_groups.json` metadata file
-        into a format suitable for Wangview.
+        into a format suitable for Wangview,
+        and stores it in self.tile_groups.
         Example input:
         {"g.g.g.g": [{"filename": "g.s.png", "x":0, "y":0},
                      {"filename": "v.g.png", "x":96,"y":96}]}
@@ -72,6 +74,7 @@ class Display(object):
         """
         Converts the data in the `tilesets.json` metadata file
         into a format suitable for Wangview,
+        stores it in self.tilesets,
         and loads tilesets into bearlibterminal.
         """
         first_tileset = True
@@ -111,39 +114,70 @@ class Display(object):
             # Insert the next tileset's tiles at the correct unicode codepoint
             tileset_offset_counter += rx*ry
     def init_terrain_map(self):
+        """
+        Calls Hypergraph.generate_lines
+        to generate a grid of terrain values,
+        and formats the result as a deque of deques.
+        Stores the result in self.terrain_map.
+        """
         terrain_iter = self.hypergraph.generate_lines(
             self.terrain_width, self.terrain_height)
         terrain_deque_iter = (deque(line, self.terrain_width)
                               for line in terrain_iter)
         self.terrain_map = deque(terrain_deque_iter, self.terrain_height)
     def init_tile_map(self):
+        """
+        Generates a grid of unicode codepoints specifying graphical tiles,
+        conforming to the current grid of terrain values,
+        and formats it as a deque of deques.
+        Stores the result in self.tile_map.
+        """
         tile_iter = ((self.select_tile(self.get_tile_corners(x,y))
                       for x in range(self.tile_width))
                      for y in range(self.tile_height))
         tile_deque_iter = (deque(line, self.tile_width) for line in tile_iter)
         self.tile_map = deque(tile_deque_iter, self.tile_height)
     def get_tile_corners(self, x, y):
+        """
+        Returns a generator which iterates over the terrain values in positions
+        [(x,y), (x,y+1), (x+1, y), (x+1, y+1)]
+        """
         return (self.terrain_map[y][x]
                 for (x,y) in
                 product((x,x+1),(y,y+1)))
     def select_tile(self, corners):
+        """Selects a random tile that has the specified terrain values in its corners"""
         return random.choice(self.tile_groups[tuple(corners)])
     def draw_iter(self):
+        """Yields cell coordinates, offset, and character for each tile to be drawn"""
         for y, line in enumerate(self.tile_map):
+            # Corner Wang tiles are offset by a quarter of a tile in each dimension
             dy =-self.resolution//2
             if y == self.tile_height-1:
+                # The terminal ignores characters put outside its range,
+                # so one row must be drawn using composition
                 y -= 1
                 dy += self.resolution
             for x, c in enumerate(line):
                 dx = -self.resolution//2
                 if x == self.tile_width-1:
+                    # One column must also be drawn using composition
                     x -= 1
                     dx += self.resolution
                 yield (x,y,dx,dy,c)
     def draw(self):
+        """
+        Draws every tile to the terminal.
+        See also: `draw_iter.`
+        """
         for draw_args in self.draw_iter():
             blt.put_ext(*draw_args)
     def run(self):
+        """
+        Draws the scene to the terminal and refreshes repeatedly.
+        Quits on pressing Esc or closing the window.
+        Creates a new scene on pressing Space.
+        """
         stop = False
         blt.composition(True)
         while not stop:
