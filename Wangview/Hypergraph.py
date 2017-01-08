@@ -39,7 +39,7 @@ class Hypergraph(object):
         # For each additional terrain:
         seq = terrains[1:]
         # Restrict the list of cliques to those containing this terrain
-        combine = lambda options, terrain: [clique for clique in options if terrain in clique]
+        combine = lambda options, terrain: filter(lambda clique: terrain in clique, options)
         # Take the union of the remaining cliques
         return self.flatten_options(reduce(combine, seq, start))
     def terrain_options_2(self, t_left=[], t_up=[]):
