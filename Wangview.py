@@ -15,6 +15,6 @@ if __name__ == '__main__':
         w = Display(*sys.argv[1:])
         w.run()
     except (IndexError, FileNotFoundError):
-        print('Usage: Wangview.py [path [tile_groups.json [terrain_hypergraph.json [tileset_data.json]]]]')
+        print('Usage: Wangview.py [path [tile_groups.json [terrain_hypergraph.json [tileset_data.json]]]]\n')
         raise
 
