@@ -50,3 +50,13 @@ class Hypergraph(object):
             line = self.generate_line(width, line)
             yield line
 
+
+# In[ ]:
+
+if __name__ == '__main__':
+    th = Hypergraph({'a':[['a','b'],['c','a']],
+                     'b':[['a','b'],['b','c']],
+                     'c':[['b','c'],['c','a']]})
+    for line in th.generate_lines(10,10):
+        print(''.join(line)), 
+
