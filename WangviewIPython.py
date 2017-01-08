@@ -1,6 +1,10 @@
 
 # coding: utf-8
 
+# Use this notebook to run Wangview while developing with IPython.
+# 
+# The `autoreload` extension will allow you to test changes to the code without restarting the kernel.
+
 # In[ ]:
 
 get_ipython().magic('load_ext autoreload')
