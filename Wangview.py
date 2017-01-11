@@ -120,6 +120,10 @@ class Wangview(object):
                 elif kp == blt.TK_SPACE:
                     self.init_terrain_map()
                     self.init_tile_map()
+                elif kp == blt.TK_W:
+                    line = self.hypergraph.generate_line(self.terrain_width)
+                    self.terrain_map.appendleft(line)
+                    self.init_tile_map()        
         blt.close()
 
 
@@ -205,4 +209,3 @@ if __name__ == '__main__':
         wangview(*sys.argv[1:])
     except (IndexError, FileNotFoundError):
         print('Usage: Wangview.py [path [tile_groups.json [terrain_hypergraph.json [tileset_data.json]]]]')
-
