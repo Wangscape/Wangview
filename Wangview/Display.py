@@ -57,8 +57,8 @@ class Display(object):
         """
         tileset = self.tilesets[tile['filename']]
         return (tileset.offset +
-                tileset.width*tile['y']//self.resolution +
-                tile['x']//self.resolution)
+                tileset.width*tile['y']//self.resolution[1] +
+                tile['x']//self.resolution[0])
     def simplify_tile_group(self, tile_group):
         """Converts every tile in a group into a unicode codepoint"""
         return [self.simplify_tile(tile) for tile in tile_group]
@@ -91,8 +91,8 @@ class Display(object):
                 self.resolution = resolution
                 # Initialise bearlibterminal
                 blt.open()
-                config_string = "window: size=30x20, cellsize={0}x{0}, title='Wangview'".format(
-                    self.resolution)
+                config_string = "window: size=30x20, cellsize={0}x{1}, title='Wangview'".format(
+                    self.resolution[0], self.resolution[1])
                 blt.set(config_string)
                 # Start tile unicode blocks in private space
                 tileset_offset_counter = 0xE000
@@ -103,18 +103,18 @@ class Display(object):
             # Validate remaining tilesets' resolutions
             assert(self.resolution == resolution)
             # Calculate the number of tiles the tileset has in each axis
-            rx = tileset['x']//self.resolution
-            ry = tileset['y']//self.resolution
+            rx = tileset['x']//self.resolution[0]
+            ry = tileset['y']//self.resolution[1]
             # Add the tileset's entry to the tileset container
             filename = tileset['filename']
             self.tilesets[filename] = Tileset(
                 filename, tileset_offset_counter,
                 rx,ry, tuple(tileset['terrains']))
             # Load the tileset in bearlibterminal
-            config_string = "0x{0:x}: {1}, size={2}x{2}".format(
+            config_string = "0x{0:x}: {1}, size={2}x{3}".format(
                     tileset_offset_counter,
                     path.join(self.rel_path, filename),
-                    self.resolution)
+                    self.resolution[0], self.resolution[1])
             blt.set(config_string)
             # Insert the next tileset's tiles at the correct unicode codepoint
             tileset_offset_counter += rx*ry
@@ -156,19 +156,21 @@ class Display(object):
     def draw_iter(self):
         """Yields cell coordinates, offset, and character for each tile to be drawn"""
         for y, line in enumerate(self.tile_map):
-            # Corner Wang tiles are offset by a quarter of a tile in each dimension
-            dy =-self.resolution//2
+            # Corner Wang tiles are offset by a quarter of a tile in each dimension.
+            # Odd resolutions have the pixel at (0,0) moved by (x//2, y//2) in output tiles,
+            # So this reverse translation is correct.
+            dy = -(self.resolution[1]//2)
             if y == self.tile_height-1:
                 # The terminal ignores characters put outside its range,
                 # so one row must be drawn using composition
                 y -= 1
-                dy += self.resolution
+                dy += self.resolution[1]
             for x, c in enumerate(line):
-                dx = -self.resolution//2
+                dx = -(self.resolution[0]//2)
                 if x == self.tile_width-1:
                     # One column must also be drawn using composition
                     x -= 1
-                    dx += self.resolution
+                    dx += self.resolution[0]
                 yield (x,y,dx,dy,c)
     def draw(self):
         """
