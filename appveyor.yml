@@ -19,4 +19,9 @@ build_script:
 - cmd: >-
     python -m py2exe.build_exe Wangview.py
 
-    dir /s
+    move dist Wangview
+    
+    7z a Wangview.zip Wangview/*
+artifacts:
+- path: Wangview.zip
+  name: Wangview executable package
