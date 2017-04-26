@@ -14,8 +14,6 @@ install:
 - cmd: >-
     pip install py2exe
 
-    pyinstaller --version
-
     pip install -r requirements.txt
 build_script:
 - cmd: >-
