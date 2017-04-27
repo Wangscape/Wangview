@@ -138,7 +138,24 @@ Wangview = Target(
 #     into the zipfile or the exe/dll files, and everything is loaded
 #     without unpacking to the file system.  This does not work for
 #     some dlls, so use with caution.
-
+includes = [
+  'imp'
+]
+excludes = [
+  '_ssl',
+  '_hashlib',
+  'doctest',
+  'pdb',
+  'unittest',
+  'difflib',
+  'inspect',
+  'http',
+  'unicodedata',
+  'select',
+  'bz2'
+]
+dll_excludes = [
+]
 
 py2exe_options = dict(
     packages = [],
@@ -149,6 +166,9 @@ py2exe_options = dict(
     compressed=False, # uncompressed may or may not have a faster startup
     bundle_files=3,
     dist_dir='dist',
+    includes=includes,
+    excludes=excludes,
+    dll_excludes=dll_excludes
     )
 
 
@@ -169,7 +189,7 @@ setup(name="name",
       windows=[],
       
       data_files=[('.', [blt_dll])],
-
+      
       # py2exe options
       zipfile=None,
       options={"py2exe": py2exe_options},
