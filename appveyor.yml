@@ -17,11 +17,9 @@ install:
     pip install -r requirements.txt
 build_script:
 - cmd: >-
-    python -m py2exe.build_exe Wangview.py
-
-    move dist Wangview
+    python setup.py py2exe
     
-    7z a Wangview.zip Wangview/*
+    7z a Wangview.zip dist
 artifacts:
 - path: Wangview.zip
   name: Wangview executable package
