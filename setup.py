@@ -152,7 +152,9 @@ excludes = [
   'http',
   'unicodedata',
   'select',
-  'bz2'
+  'bz2',
+  'IPython',
+  'ipykernel'
 ]
 dll_excludes = [
 ]
@@ -165,7 +167,7 @@ py2exe_options = dict(
     optimize=0,
     compressed=False, # uncompressed may or may not have a faster startup
     bundle_files=0,
-    dist_dir='dist',
+    dist_dir='dist/Wangview',
     includes=includes,
     excludes=excludes,
     dll_excludes=dll_excludes
