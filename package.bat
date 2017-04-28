@@ -1,5 +1,5 @@
 echo Please ensure PYTHON is set to the directory of Python installation at version 3.4 or earlier.
-OLDPATH=%PATH%
+set OLD_PATH=%PATH%
 PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
 python --version
 pip --version
@@ -10,4 +10,4 @@ python setup.py py2exe
 cd dist
 7z a Wangview.zip Wangview
 cd ..
-PATH=%OLDPATH%
+PATH=%OLD_PATH%
