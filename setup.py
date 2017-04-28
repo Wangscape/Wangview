@@ -139,7 +139,8 @@ Wangview = Target(
 #     without unpacking to the file system.  This does not work for
 #     some dlls, so use with caution.
 includes = [
-  'imp'
+  'imp',
+  'bearlibterminal'
 ]
 excludes = [
   '_ssl',
