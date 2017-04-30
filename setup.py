@@ -139,8 +139,7 @@ Wangview = Target(
 #     without unpacking to the file system.  This does not work for
 #     some dlls, so use with caution.
 includes = [
-  'imp',
-  'bearlibterminal'
+  'imp'
 ]
 excludes = [
   '_ssl',
@@ -167,7 +166,7 @@ py2exe_options = dict(
 ##    dll_excludes = "MSVCP90.dll mswsock.dll powrprof.dll".split(),
     optimize=0,
     compressed=False, # uncompressed may or may not have a faster startup
-    bundle_files=3,
+    bundle_files=0,
     dist_dir='dist/Wangview',
     includes=includes,
     excludes=excludes,
