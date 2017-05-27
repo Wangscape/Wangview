@@ -161,9 +161,6 @@ dll_excludes = [
 
 py2exe_options = dict(
     packages = [],
-##    excludes = "tof_specials Tkinter".split(),
-##    ignores = "dotblas gnosis.xml.pickle.parsers._cexpat mx.DateTime".split(),
-##    dll_excludes = "MSVCP90.dll mswsock.dll powrprof.dll".split(),
     optimize=0,
     compressed=False, # uncompressed may or may not have a faster startup
     bundle_files=0,
