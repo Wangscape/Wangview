@@ -1,1 +1,1 @@
-bearlibterminal==0.14.12
+bearlibterminal==0.15.2
