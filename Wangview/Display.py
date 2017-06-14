@@ -2,13 +2,13 @@
 # coding: utf-8
 from bearlibterminal import terminal as blt
 import json
-from collections import deque
 from itertools import product
 import random
 from os import path
 from .Tileset import Tileset
 from .Hypergraph import Hypergraph
 from .FPSLimiter import FPSLimiter
+from .MapGrid import MapGrid
 
 class Display(object):
     """
@@ -125,9 +125,10 @@ class Display(object):
         """
         terrain_iter = self.hypergraph.generate_lines(
             self.terrain_width, self.terrain_height)
-        terrain_deque_iter = (deque(line, self.terrain_width)
-                              for line in terrain_iter)
-        self.terrain_map = deque(terrain_deque_iter, self.terrain_height)
+        self.terrain_map = MapGrid(self.terrain_width, self.terrain_height)
+        for line in terrain_iter:
+            line_list = list(line)
+            self.terrain_map.add_line(line, True, False)
     def init_tile_map(self):
         """
         Generates a grid of unicode codepoints specifying graphical tiles,
@@ -138,14 +139,15 @@ class Display(object):
         tile_iter = ((self.select_tile(self.get_tile_corners(x,y))
                       for x in range(self.tile_width))
                      for y in range(self.tile_height))
-        tile_deque_iter = (deque(line, self.tile_width) for line in tile_iter)
-        self.tile_map = deque(tile_deque_iter, self.tile_height)
+        self.tile_map = MapGrid(self.tile_width, self.tile_height)
+        for line in tile_iter:
+            self.tile_map.add_line(line, True, False)
     def get_tile_corners(self, x, y):
         """
         Returns a generator which iterates over the terrain values in positions
         [(x,y), (x,y+1), (x+1, y), (x+1, y+1)]
         """
-        return (self.terrain_map[y][x]
+        return (self.terrain_map[x,y]
                 for (x,y) in
                 product((x,x+1),(y,y+1)))
     def select_tile(self, corners):

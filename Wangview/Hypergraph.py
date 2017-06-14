@@ -1,13 +1,7 @@
 
 # coding: utf-8
-
-# In[ ]:
-
 from functools import reduce
 import random
-
-
-# In[ ]:
 
 class Hypergraph(object):
     """
@@ -120,9 +114,6 @@ class Hypergraph(object):
             line = self.generate_line(width, line)
             yield line
 
-
-# In[ ]:
-
 if __name__ == '__main__':
     # A quick test that the class is working correctly
     th = Hypergraph({'a':[['a','b'],['c','a']],
@@ -130,4 +121,3 @@ if __name__ == '__main__':
                      'c':[['b','c'],['c','a']]})
     for line in th.generate_lines(10,10):
         print(''.join(line)), 
-
