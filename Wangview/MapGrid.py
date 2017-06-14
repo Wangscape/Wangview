@@ -44,13 +44,17 @@ class MapGrid(object):
             for terrain, row in zip(line, self._grid):
                 append(row,terrain)
     def row(self, y):
+        """Returns an iterator for the specified row."""
         return iter(self._grid[y])
     def column(self, x):
+        """Returns an iterator for the specified column."""
         return (line[x] for line in self._grid)
     def __iter__(self):
+        """Returns an iterator of row iterators."""
         for row in self._grid:
             yield iter(row)
     def __getitem__(self, xy):
+        """Returns the value at the given coordinates."""
         x,y = xy
         return self._grid[y][x]
     def __str__(self):
