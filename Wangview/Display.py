@@ -1,8 +1,5 @@
 
 # coding: utf-8
-
-# In[ ]:
-
 from bearlibterminal import terminal as blt
 import json
 from collections import deque
@@ -11,9 +8,7 @@ import random
 from os import path
 from .Tileset import Tileset
 from .Hypergraph import Hypergraph
-
-
-# In[ ]:
+from .FPSLimiter import FPSLimiter
 
 class Display(object):
     """
@@ -25,7 +20,8 @@ class Display(object):
                  rel_path='.',
                  fn_tile_groups='tile_groups.json',
                  fn_terrain_hypergraph='terrain_hypergraph.json',
-                 fn_tileset_data='tilesets.json'):
+                 fn_tileset_data='tilesets.json',
+                 fps=30):
         # Initialise file path and metadata
         self.rel_path = rel_path
         with open(path.join(rel_path, fn_tileset_data),'r') as f:
@@ -49,6 +45,8 @@ class Display(object):
         self.init_terrain_map()
         # Select tile values based on terrain values
         self.init_tile_map()
+        # Throttle framerate
+        self.fps_limiter = FPSLimiter(fps)
     def simplify_tile(self, tile):
         """
         Converts a full specification of a tile's location in a tileset
@@ -188,6 +186,7 @@ class Display(object):
         stop = False
         blt.composition(True)
         while not stop:
+            self.fps_limiter.wait()
             blt.clear()
             self.draw()
             blt.refresh()
@@ -201,4 +200,3 @@ class Display(object):
                     self.init_terrain_map()
                     self.init_tile_map()
         blt.close()
-
