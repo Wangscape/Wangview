@@ -21,11 +21,13 @@ class Display(object):
                  fn_tile_groups='tile_groups.json',
                  fn_terrain_hypergraph='terrain_hypergraph.json',
                  fn_tileset_data='tilesets.json',
-                 fps=30):
+                 fps=30,
+                 size=(30,20)):
+                 # fixed_map=None):
         # Initialise file path and metadata
         self.rel_path = rel_path
         with open(path.join(rel_path, fn_tileset_data),'r') as f:
-            self.init_tilesets(json.load(f))
+            self.init_tilesets(json.load(f), size)
         with open(path.join(rel_path,fn_tile_groups),'r') as f:
             self.init_tile_groups(json.load(f))
         with open(path.join(rel_path, fn_terrain_hypergraph),'r') as f:
@@ -73,7 +75,7 @@ class Display(object):
         """
         self.tile_groups = {tuple(k.split('.')):self.simplify_tile_group(v)
                             for (k,v) in raw_groups.items()}
-    def init_tilesets(self, raw_tileset_data):
+    def init_tilesets(self, raw_tileset_data, size):
         """
         Converts the data in the `tilesets.json` metadata file
         into a format suitable for Wangview,
@@ -89,8 +91,8 @@ class Display(object):
                 self.resolution = resolution
                 # Initialise bearlibterminal
                 blt.open()
-                config_string = "window: size=30x20, cellsize={0}x{1}, title='Wangview'".format(
-                    self.resolution[0], self.resolution[1])
+                config_string = "window: size={0}x{1}, cellsize={2}x{3}, title='Wangview'".format(
+                    size[0], size[1], self.resolution[0], self.resolution[1])
                 blt.set(config_string)
                 # Start tile unicode blocks in private space
                 tileset_offset_counter = 0xE000
