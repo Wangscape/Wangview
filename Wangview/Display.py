@@ -22,16 +22,22 @@ class Display(object):
                  fn_terrain_hypergraph='terrain_hypergraph.json',
                  fn_tileset_data='tilesets.json',
                  fps=30,
-                 size=(30,20)):
-                 # fixed_map=None):
+                 size=(30,20),
+                 fn_fixed_map=None):
         # Initialise file path and metadata
+        self.size = size
         self.rel_path = rel_path
         with open(path.join(rel_path, fn_tileset_data),'r') as f:
-            self.init_tilesets(json.load(f), size)
+            self.init_tilesets(json.load(f))
         with open(path.join(rel_path,fn_tile_groups),'r') as f:
             self.init_tile_groups(json.load(f))
         with open(path.join(rel_path, fn_terrain_hypergraph),'r') as f:
             self.hypergraph = Hypergraph(json.load(f))
+        if fn_fixed_map is not None:
+            with open(path.join(rel_path, fn_fixed_map),'r') as f:
+                self.fixed_map = json.load(f)
+        else:
+            self.fixed_map = None
         # Initialise geometry info
         self.terminal_width = blt.state(blt.TK_WIDTH)
         self.terminal_height = blt.state(blt.TK_HEIGHT)
@@ -75,7 +81,7 @@ class Display(object):
         """
         self.tile_groups = {tuple(k.split('.')):self.simplify_tile_group(v)
                             for (k,v) in raw_groups.items()}
-    def init_tilesets(self, raw_tileset_data, size):
+    def init_tilesets(self, raw_tileset_data):
         """
         Converts the data in the `tilesets.json` metadata file
         into a format suitable for Wangview,
@@ -92,7 +98,7 @@ class Display(object):
                 # Initialise bearlibterminal
                 blt.open()
                 config_string = "window: size={0}x{1}, cellsize={2}x{3}, title='Wangview'".format(
-                    size[0], size[1], self.resolution[0], self.resolution[1])
+                    self.size[0], self.size[1], self.resolution[0], self.resolution[1])
                 blt.set(config_string)
                 # Start tile unicode blocks in private space
                 tileset_offset_counter = 0xE000
@@ -124,13 +130,20 @@ class Display(object):
         to generate a grid of terrain values,
         and formats the result as a deque of deques.
         Stores the result in self.terrain_map.
+        If fixed_map is defined, a fixed map is used instead.
         """
-        terrain_iter = self.hypergraph.generate_lines(
-            self.terrain_width, self.terrain_height)
         self.terrain_map = MapGrid(self.terrain_width, self.terrain_height)
-        for line in terrain_iter:
-            line_list = list(line)
-            self.terrain_map.add_line(line, True, False)
+        if self.fixed_map is not None:
+            assert len(self.fixed_map) == self.terrain_height
+            for line in self.fixed_map:
+                assert len(line) == self.terrain_width
+                self.terrain_map.add_line(line, True, False)
+        else:
+            terrain_iter = self.hypergraph.generate_lines(
+                self.terrain_width, self.terrain_height)
+            for line in terrain_iter:
+                line_list = list(line)
+                self.terrain_map.add_line(line, True, False)
     def init_tile_map(self):
         """
         Generates a grid of unicode codepoints specifying graphical tiles,
