@@ -1,20 +1,22 @@
 
 # coding: utf-8
-
-# In[ ]:
-
 from Wangview.Display import Display
 import sys
-
-
-# In[ ]:
+import argparse
 
 if __name__ == '__main__':
-    import sys
+    parser = argparse.ArgumentParser(description="Render random landscapes using Wangscape tiles")
+    parser.add_argument("path", type=str, default=".", help="Path to the folder containing the tileset and metadata")
+    parser.add_argument("--tile-groups", type=str, default="tile_groups.json", help="Name of the tile groups JSON file")
+    parser.add_argument("--terrain-hypergraph", type=str, default="terrain_hypergraph.json", help="Name of the terrain hypergraph JSON file")
+    parser.add_argument("--tileset-data", type=str, default="tilesets.json", help="Name of the tileset data JSON file")
+    # parser.add_argument("--fps", type=int, default=30, help="Maximum frames per second")
+    # parser.add_argument("--map", type=str, default=None, help="Name of a JSON file with a fixed map")
+    args = parser.parse_args()
+    print(args)
     try:
-        w = Display(*sys.argv[1:])
+        w = Display(args.path, args.tile_groups, args.terrain_hypergraph, args.tileset_data)
         w.run()
     except (IndexError, FileNotFoundError):
-        print('Usage: Wangview.py [path [tile_groups.json [terrain_hypergraph.json [tileset_data.json]]]]\n')
+        parser.print_help()
         raise
-
