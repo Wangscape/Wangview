@@ -3,14 +3,188 @@
 from bearlibterminal import terminal as blt
 import json
 from itertools import product
-import random
 from os import path
-from .Tileset import Tileset
 from .Hypergraph import Hypergraph
 from .FPSLimiter import FPSLimiter
 from .MapGrid import MapGrid
+from .TilesetInformation import TilesetInformation
+from .TileGroups import TileGroups
 
 class Display(object):
+    """
+    Stores Wangscape output metadata in a suitable format,
+    stores terrain and tile grids,
+    and interfaces with bearlibterminal to draw a scene,
+    or with pillow to write one to file.
+    """
+    def __init__(self,
+                 rel_path='.',
+                 fn_tile_groups='tile_groups.json',
+                 fn_terrain_hypergraph='terrain_hypergraph.json',
+                 fn_tileset_data='tilesets.json',
+                 fps=30,
+                 map_mode=[30,20],
+                 output_mode=[]):
+        # Initialise base path
+        self.rel_path = rel_path
+        # Read map size or fixed map and prepare storage
+        self.init_map(map_mode)
+        self.init_output(output_mode)
+        self.init_tilesets(path.join(rel_path, fn_tileset_data))
+        self.tile_groups = TileGroups.from_file(self.tilesets,
+                                                path.join(rel_path, fn_tile_groups))
+        self.hypergraph = Hypergraph.from_file(path.join(rel_path, fn_terrain_hypergraph))
+        self.update_map()
+        # Throttle framerate
+        self.fps_limiter = FPSLimiter(fps)
+
+    def init_map(self, map_mode):
+        if type(map_mode) is str:
+            # Initialise fixed map and use its size
+            self.use_fixed_map = True
+            fn_fixed_map = map_mode
+            self.init_fixed_map(fn_fixed_map)
+        else:
+            # Use random maps of the given size
+            self.use_fixed_map = False
+            size = tuple(map_mode)
+            self.init_sizes(size)
+        self.terrain_map = MapGrid(self.terrain_map_width, self.terrain_map_height)
+        self.tile_map = MapGrid(self.tile_map_width, self.tile_map_height)
+            
+    def init_fixed_map(self, fn_fixed_map):
+        with open(path.join(self.rel_path, fn_fixed_map),'r') as f:
+            fixed_map_data = json.load(f)
+        self.fixed_map = fixed_map_data["map"]
+        self.init_sizes(fixed_map_data["size"])
+        
+    def init_sizes(self, size):
+        # The size of the scene in tiles
+        self.display_width = size[0]
+        self.display_height = size[1]
+        # Tiles are not aligned with display boundaries,
+        # so one extra row and column is required
+        self.tile_map_width = self.display_width + 1
+        self.tile_map_height = self.display_height + 1
+        # Terrain values are specified in the corners of the graphical tiles,
+        # so another extra row and column is required
+        self.terrain_map_width = self.tile_map_width + 1
+        self.terrain_map_height = self.tile_map_height + 1
+        
+    def add_blt_output(self):
+        from .OutputBLT import OutputBLT
+        self.outputs.append(OutputBLT())
+        self.use_blt = True
+        
+    def add_pillow_output(self, filename):
+        from .OutputPillow import OutputPillow
+        self.outputs.append(OutputPillow(filename))
+        self.use_pillow = True
+        
+    def init_output(self, output_mode):
+        self.outputs = []
+        for item in output_mode:
+            if item is True:
+                self.add_blt_output()
+            else:
+                self.add_pillow_output(item)
+        if self.outputs == []:
+            self.add_blt_output()
+        for output in self.outputs:
+            output.set_size(self.display_width, self.display_height)
+            
+    def init_tilesets(self, filename):
+        """
+        Converts the data in the `tilesets.json` metadata file
+        into a format suitable for Wangview,
+        stores it in self.tilesets,
+        and loads tilesets into bearlibterminal.
+        """
+        self.tilesets = TilesetInformation(self.outputs)
+        self.tilesets.set_rel_path(self.rel_path)
+        self.tilesets.load_tilesets(filename)
+        
+    def update_map(self):
+        if self.use_fixed_map:
+            self.terrain_map.empty()
+            for line in self.fixed_map:
+                self.terrain_map.add_line(line, True, False)
+        else:
+            self.generate_terrain_map()
+        self.generate_tile_map()
+    def generate_terrain_map(self):
+        self.terrain_map.empty()
+        for line in self.hypergraph.generate_lines(self.terrain_map_width,
+                                                   self.terrain_map_height):
+            self.terrain_map.add_line(line, True, False)
+    
+    def generate_tile_map(self):
+        tile_iter = ((self.tile_groups.select_tile(self.get_tile_corners(x,y))
+                      for x in range(self.tile_map_width))
+                     for y in range(self.tile_map_height))
+        self.tile_map.empty()
+        for line in tile_iter:
+            self.tile_map.add_line(line, True, False)
+            
+    def get_tile_corners(self, x, y):
+        """
+        Returns a generator which iterates over the terrain values in positions
+        [(x,y), (x,y+1), (x+1, y), (x+1, y+1)]
+        """
+        return (self.terrain_map[x,y]
+                for (x,y) in
+                product((x,x+1),(y,y+1)))
+    
+    def draw_iter(self):
+        """Yields cell coordinates, offset, and character for each tile to be drawn"""
+        for y, line in enumerate(self.tile_map):
+            # Corner Wang tiles are offset by a quarter of a tile in each dimension.
+            # Odd resolutions have the pixel at (0,0) moved by (x//2, y//2) in output tiles,
+            # So this reverse translation is correct.
+            dy = -(self.tilesets.tile_height//2)
+            if y == self.tile_map_height-1:
+                # The terminal ignores characters put outside its range,
+                # so one row must be drawn using composition
+                y -= 1
+                dy += self.tilesets.tile_height
+            for x, c in enumerate(line):
+                dx = -(self.tilesets.tile_width//2)
+                if x == self.tile_map_width-1:
+                    # One column must also be drawn using composition
+                    x -= 1
+                    dx += self.tilesets.tile_width
+                yield (x,y,dx,dy,c)
+    
+    def draw(self):
+        """
+        Draws every tile to the outputs.
+        See also: `draw_iter.`
+        """
+        for output in self.outputs:
+            output.clear()
+        for draw_args in self.draw_iter():
+            for output in self.outputs:
+                output.put_ext(*draw_args)
+        for output in self.outputs:
+            output.refresh()
+    def run(self):
+        """
+        Draws the scene to the terminal and refreshes repeatedly.
+        Quits on pressing Esc or closing the window.
+        Creates a new scene on pressing Space.
+        """
+        while True:
+            self.fps_limiter.wait()
+            self.draw()
+            signals = [output.signal() for output in self.outputs]
+            if all(signal == 'stop' for signal in signals):
+                break
+            if 'next' in signals:
+                self.update_map()
+        for output in self.outputs:
+            output.close()
+
+class NotDisplay(object):
     """
     Stores Wangscape output metadata in a suitable format,
     stores terrain and tile grids,
@@ -22,22 +196,30 @@ class Display(object):
                  fn_terrain_hypergraph='terrain_hypergraph.json',
                  fn_tileset_data='tilesets.json',
                  fps=30,
-                 size=(30,20),
-                 fn_fixed_map=None):
-        # Initialise file path and metadata
-        self.size = size
+                 map_mode=[30,20],
+                 output_mode=[]):
+        # Initialise base path
         self.rel_path = rel_path
+        # Initialise fixed map and use its size, if it exists
+        if type(map_mode) is str:
+            fn_fixed_map = map_mode
+            self.init_fixed_map(fn_fixed_map)
+        else:
+            size = tuple(map_mode)
+            self.init_sizes(size)
         with open(path.join(rel_path, fn_tileset_data),'r') as f:
             self.init_tilesets(json.load(f))
         with open(path.join(rel_path,fn_tile_groups),'r') as f:
             self.init_tile_groups(json.load(f))
         with open(path.join(rel_path, fn_terrain_hypergraph),'r') as f:
             self.hypergraph = Hypergraph(json.load(f))
-        if fn_fixed_map is not None:
-            with open(path.join(rel_path, fn_fixed_map),'r') as f:
-                self.fixed_map = json.load(f)
-        else:
-            self.fixed_map = None
+        # Select terrain values
+        self.init_terrain_map()
+        # Select tile values based on terrain values
+        self.init_tile_map()
+        # Throttle framerate
+        self.fps_limiter = FPSLimiter(fps)
+    def init_sizes(self, size):
         # Initialise geometry info
         self.terminal_width = blt.state(blt.TK_WIDTH)
         self.terminal_height = blt.state(blt.TK_HEIGHT)
@@ -49,12 +231,6 @@ class Display(object):
         # so another extra row and column is required
         self.terrain_width = self.terminal_width+2
         self.terrain_height = self.terminal_height+2
-        # Select terrain values
-        self.init_terrain_map()
-        # Select tile values based on terrain values
-        self.init_tile_map()
-        # Throttle framerate
-        self.fps_limiter = FPSLimiter(fps)
     def simplify_tile(self, tile):
         """
         Converts a full specification of a tile's location in a tileset
@@ -124,6 +300,11 @@ class Display(object):
             blt.set(config_string)
             # Insert the next tileset's tiles at the correct unicode codepoint
             tileset_offset_counter += rx*ry
+    def init_fixed_map(self, fn_fixed_map):
+        with open(path.join(rel_path, fn_fixed_map),'r') as f:
+            fixed_map_data = json.load(f)
+        self.fixed_map = fixed_map["map"]
+        self.size = tuple(fixed_map["size"])
     def init_terrain_map(self):
         """
         Calls Hypergraph.generate_lines

@@ -5,8 +5,10 @@ from collections import deque
 class MapGrid(object):
     """Stores terrain and tile information for display."""
     def __init__(self, *size):
-        self._columns, self._rows = (0, 0)
         self._columns_max, self._rows_max = size
+        self.empty()
+    def empty(self):
+        self._columns, self._rows = (0, 0)
         self._grid = deque(maxlen=self._rows_max)
     def full(self):
         """Returns True if the MapGrid is at full capacity, False otherwise."""
