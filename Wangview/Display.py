@@ -78,7 +78,7 @@ class Display(object):
         
     def add_pillow_output(self, filename):
         from .OutputPillow import OutputPillow
-        self.outputs.append(OutputPillow(filename))
+        self.outputs.append(OutputPillow(path.join(self.rel_path, filename)))
         self.use_pillow = True
         
     def init_output(self, output_mode):
