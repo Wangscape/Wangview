@@ -1,1 +1,2 @@
-bearlibterminal==0.15.2
+bearlibterminal>=0.15.2
+Pillow>=4.2.1

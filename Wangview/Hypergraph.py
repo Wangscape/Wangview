@@ -1,20 +1,35 @@
 
 # coding: utf-8
-
-# In[ ]:
-
 from functools import reduce
 import random
-
-
-# In[ ]:
+import json
 
 class Hypergraph(object):
     """
     Stores data specifying which terrains can be present in a single tile,
     and uses that data to generate random terrain grids.
     """
-    def __init__(self, raw_hypergraph):
+    def __init__(self):
+        self.data = {}
+    
+    @classmethod
+    def from_data(cls, raw_hypergraph):
+        h = cls()
+        h.init_hypergraph(raw_hypergraph)
+        return h
+    
+    @classmethod
+    def from_file(cls, filename):
+        h = cls()
+        h.load(filename)
+        return h
+        
+    def load(self, filename):
+        with open(filename, 'r') as f:
+            raw_hypergraph = json.load(f)
+        self.init_hypergraph(raw_hypergraph)
+            
+    def init_hypergraph(self, raw_hypergraph):
         # Input data is a dict of lists of lists.
         # Convert it to a dict of frozensets of frozensets.
         self.data = {k: frozenset(map(frozenset,v))
@@ -25,6 +40,7 @@ class Hypergraph(object):
         return reduce(lambda x,y: x.union(y),
                       options,
                       frozenset())
+    
     def terrain_options(self, *terrains):
         """
         Returns a frozenset containing the terrains which
@@ -42,6 +58,7 @@ class Hypergraph(object):
         combine = lambda options, terrain: filter(lambda clique: terrain in clique, options)
         # Take the union of the remaining cliques
         return self.flatten_options(reduce(combine, seq, start))
+    
     def terrain_options_2(self, t_left=[], t_up=[]):
         """
         Returns a frozenset containing the terrains which can legally be placed
@@ -110,6 +127,7 @@ class Hypergraph(object):
             # Set L to the value just inserted
             t_left = [new_line[-1]]
         return new_line
+    
     def generate_lines(self, width, height):
         """Yields each line of a grid of terrain values satisfying the ajdacency constraints"""
         # Yield a line with no constraints from a preceding line
@@ -120,14 +138,10 @@ class Hypergraph(object):
             line = self.generate_line(width, line)
             yield line
 
-
-# In[ ]:
-
 if __name__ == '__main__':
     # A quick test that the class is working correctly
-    th = Hypergraph({'a':[['a','b'],['c','a']],
-                     'b':[['a','b'],['b','c']],
-                     'c':[['b','c'],['c','a']]})
+    th = Hypergraph.from_data({'a':[['a','b'],['c','a']],
+                               'b':[['a','b'],['b','c']],
+                               'c':[['b','c'],['c','a']]})
     for line in th.generate_lines(10,10):
         print(''.join(line)), 
-
